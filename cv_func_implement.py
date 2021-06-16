@@ -36,8 +36,11 @@ def _warpAffine(x, matrix, dsize=None, flags=None):
     if flags is None or flags & cv.WARP_INVERSE_MAP == 0:  # flags无cv.WARP_INVERSE_MAP参数
         matrix = _invertAffineTransform(matrix)
     grid_x, grid_y = np.meshgrid(np.arange(dsize[0]), np.arange(dsize[1]))  # np.int32
-    src_x = (matrix[0, 0] * grid_x + matrix[0, 1] * grid_y + matrix[0, 2]).round().astype(np.int32)  # X
-    src_y = (matrix[1, 0] * grid_x + matrix[1, 1] * grid_y + matrix[1, 2]).round().astype(np.int32)  # Y
+    # 也可以这样实现，是等价的
+    # src_x = (matrix[0, 0] * grid_x + matrix[0, 1] * grid_y + matrix[0, 2]).round().astype(np.int32)  # X
+    # src_y = (matrix[1, 0] * grid_x + matrix[1, 1] * grid_y + matrix[1, 2]).round().astype(np.int32)  # Y
+    src_x, src_y = np.transpose((matrix @ np.stack([grid_x, grid_y, np.ones_like(grid_x)], -1)[..., None])
+                                .astype(np.int32)[..., 0], (2, 0, 1))  # transpose把2的维度提上来
     src_x_clip = np.clip(src_x, 0, x.shape[1] - 1)  # for索引合法
     src_y_clip = np.clip(src_y, 0, x.shape[0] - 1)
     output = np.where(((0 <= src_x) & (src_x < x.shape[1]) & (0 <= src_y) & (src_y < x.shape[0]))[:, :, None],
@@ -45,11 +48,11 @@ def _warpAffine(x, matrix, dsize=None, flags=None):
     return output
 
 
-# x0 = np.random.randint(0, 256, (600, 800, 3), dtype=np.uint8)
-# matrix = np.array([[1, 1, 100], [1, 2, 80.]], dtype=np.float32)
-# y = _warpAffine(x0, matrix, (500, 1000))
-# y_ = cv.warpAffine(x0, matrix, (500, 1000), borderValue=(114, 114, 114))
-# print(np.all(y == y_))
+x0 = np.random.randint(0, 256, (600, 800, 3), dtype=np.uint8)
+matrix = np.array([[1, 1, 100], [1, 2, 80.]], dtype=np.float32)
+y = _warpAffine(x0, matrix, (500, 1000))
+y_ = cv.warpAffine(x0, matrix, (500, 1000), borderValue=(114, 114, 114))
+print(np.all(y == y_))
 
 
 def _getRotationMatrix2D(center, angle, scale):
@@ -60,6 +63,7 @@ def _getRotationMatrix2D(center, angle, scale):
     :param scale: float. 比例
     :return:
     """
+    # 中心点为(0, 0)则无需平移: 即 M[:, 2] 都为0
     alpha = scale * np.cos(angle / 180 * np.pi)
     beta = scale * np.sin(angle / 180 * np.pi)
     return np.array([  # 查公式即可

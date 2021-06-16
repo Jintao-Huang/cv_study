@@ -29,14 +29,13 @@ def _warpAffine(x, matrix, dsize=None, flags=None):
     :param matrix: 仿射矩阵. shape[2, 3]. float32
     :param dsize: Tuple[W, H]. 输出的shape
     :param flags: cv.WARP_INVERSE_MAP. 唯一可选参数
-    :return:
+    :return: shape[dsize[1], dsize[0], C]. uint8
     """
     dsize = dsize or (x.shape[1], x.shape[0])
     borderValue = np.array((114, 114, 114), dtype=x.dtype)
-    output = np.empty((dsize[1], dsize[0], *x.shape[2:]), dtype=x.dtype)
     if flags is None or flags & cv.WARP_INVERSE_MAP == 0:
         matrix = _invertAffineTransform(matrix)  # flags没有cv.WARP_INVERSE_MAP时
-    i_x, i_y = np.meshgrid(np.arange(output.shape[1]), np.arange(output.shape[0]))  # np.int32
+    i_x, i_y = np.meshgrid(np.arange(dsize[0]), np.arange(dsize[1]))  # np.int32
     src_x = (matrix[0, 0] * i_x + matrix[0, 1] * i_y + matrix[0, 2]).round().astype(np.int32)  # X
     src_y = (matrix[1, 0] * i_x + matrix[1, 1] * i_y + matrix[1, 2]).round().astype(np.int32)  # Y
     src_x_clip = np.clip(src_x, 0, x.shape[1] - 1)
@@ -47,10 +46,11 @@ def _warpAffine(x, matrix, dsize=None, flags=None):
 
 
 # x0 = np.random.randint(0, 256, (600, 800, 3), dtype=np.uint8)
-# matrix = np.array([[1, 1, 100], [1, 2, 80.]])
+# matrix = np.array([[1, 1, 100], [1, 2, 80.]], dtype=np.float32)
 # y = _warpAffine(x0, matrix, (500, 1000))
 # y_ = cv.warpAffine(x0, matrix, (500, 1000), borderValue=(114, 114, 114))
 # print(np.all(y == y_))
+
 
 def _getRotationMatrix2D(center, angle, scale):
     """
@@ -80,7 +80,6 @@ def _getAffineTransform(src, dst):
     """
     src = np.concatenate((src, np.ones(3)[:, None]), -1)  # 加上1，变为方阵
     return dst.T @ inv(src.T)
-
 
 # src = np.array([[0, 0], [100, 100], [0, 100]], dtype=np.float32)
 # dst = np.array([[30, 30], [70, 70], [30, 70]], dtype=np.float32)

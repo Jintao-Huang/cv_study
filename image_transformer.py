@@ -106,6 +106,24 @@ class ImageTransformer:
         self.matrix = flip_matrix @ self.matrix
         return flip_matrix
 
+    def shear(self, x_shear, y_shear):
+        """剪切变换(不是crop裁剪，不要搞混了)
+
+        :param x_shear: y轴向x正轴倾斜的角度
+        :param y_shear: x轴向y正轴倾斜的角度
+        :return: shape[3, 3]
+        """
+        x_shear = np.tan(x_shear * np.pi / 180)
+        y_shear = np.tan(y_shear * np.pi / 180)
+
+        shear_matrix = np.array([
+            [1, x_shear, 0],
+            [y_shear, 1, 0],
+            [0, 0, 1]
+        ], dtype=np.float32)
+        self.matrix = shear_matrix @ self.matrix
+        return shear_matrix
+
     def get_image(self, dsize=None):
         dsize = dsize or (self.image.shape[1], self.image.shape[0])
         return cv.warpAffine(self.image, self.matrix[:2], dsize, borderValue=(114, 114, 114))
@@ -117,7 +135,7 @@ def example1():
     x = resize_max(x, 800, 800)
     height, width = x.shape[:2]
     cv.imshow("1", x)
-    # -------------------------------------
+    # ------------------------------------- test rotate scale translation
     image_transformer = ImageTransformer(x)
     image_transformer.rotate(90)
     image_transformer.scale(0.5)
@@ -125,13 +143,22 @@ def example1():
     x = image_transformer.get_image()
     x2 = x
     cv.imshow("2", x)
-    # -------------------------------------
+    # ------------------------------------- test flip_lr flip_ud
     image_transformer.flip_lr()
     image_transformer.flip_ud()
     image_transformer.rotate(180)
     x = image_transformer.get_image()
     print(np.all(x == x2))  # True
     cv.imshow("3", x)
+    # ------------------------------------- test shear
+    image_transformer.shear(45, -45)
+    image_transformer.translation(0, height / 2)
+    x = image_transformer.get_image()
+    cv.imshow("4", x)
+    image_transformer.translation(0, -height / 2)
+    image_transformer.rotate(-45)
+    x = image_transformer.get_image()
+    cv.imshow("5", x)
     cv.waitKey(0)
 
 

@@ -36,11 +36,11 @@ def _warpAffine(x, matrix, dsize=None, flags=None):
     if flags is None or flags & cv.WARP_INVERSE_MAP == 0:  # flags无cv.WARP_INVERSE_MAP参数
         matrix = _invertAffineTransform(matrix)
     grid_x, grid_y = np.meshgrid(np.arange(dsize[0]), np.arange(dsize[1]))  # np.int32
+    src_x = (matrix[0, 0] * grid_x + matrix[0, 1] * grid_y + matrix[0, 2]).round().astype(np.int32)  # X
+    src_y = (matrix[1, 0] * grid_x + matrix[1, 1] * grid_y + matrix[1, 2]).round().astype(np.int32)  # Y
     # 也可以这样实现，是等价的
-    # src_x = (matrix[0, 0] * grid_x + matrix[0, 1] * grid_y + matrix[0, 2]).round().astype(np.int32)  # X
-    # src_y = (matrix[1, 0] * grid_x + matrix[1, 1] * grid_y + matrix[1, 2]).round().astype(np.int32)  # Y
-    src_x, src_y = np.transpose((matrix @ np.stack([grid_x, grid_y, np.ones_like(grid_x)], -1)[..., None])
-                                .astype(np.int32)[..., 0], (2, 0, 1))  # transpose把2的维度提上来
+    # src_x, src_y = np.transpose((matrix @ np.stack([grid_x, grid_y, np.ones_like(grid_x)], -1)[..., None])
+    #                             .astype(np.int32)[..., 0], (2, 0, 1))  # transpose把2的维度提上来
     src_x_clip = np.clip(src_x, 0, x.shape[1] - 1)  # for索引合法
     src_y_clip = np.clip(src_y, 0, x.shape[0] - 1)
     output = np.where(((0 <= src_x) & (src_x < x.shape[1]) & (0 <= src_y) & (src_y < x.shape[0]))[:, :, None],
@@ -52,6 +52,38 @@ def _warpAffine(x, matrix, dsize=None, flags=None):
 # matrix = np.array([[1, 1, 100], [1, 2, 80.]], dtype=np.float32)
 # y = _warpAffine(x0, matrix, (500, 1000))
 # y_ = cv.warpAffine(x0, matrix, (500, 1000), borderValue=(114, 114, 114))
+# print(np.all(y == y_))
+
+
+def _warpPerspective(x, matrix, dsize=None, flags=None):
+    """cv.warpAffine(borderMode=None, borderValue=(114, 114, 114))
+
+    :param x: shape[H, W, C]. uint8
+    :param matrix: 仿射矩阵. shape[2, 3]. float32
+    :param dsize: Tuple[W, H]. 输出的size
+    :param flags: cv.WARP_INVERSE_MAP. 唯一可选参数
+    :return: shape[dsize[1], dsize[0], C]. uint8
+    """
+    dsize = dsize or (x.shape[1], x.shape[0])  # 输出的size
+    borderValue = np.array((114, 114, 114), dtype=x.dtype)  # 背景填充
+    if flags is None or flags & cv.WARP_INVERSE_MAP == 0:  # flags无cv.WARP_INVERSE_MAP参数
+        matrix = cv.invert(matrix)[1]  # 求逆
+    grid_x, grid_y = np.meshgrid(np.arange(dsize[0]), np.arange(dsize[1]))  # np.int32
+    src_x = ((matrix[0, 0] * grid_x + matrix[0, 1] * grid_y + matrix[0, 2]) /
+             (matrix[2, 0] * grid_x + matrix[2, 1] * grid_y + matrix[2, 2])).round().astype(np.int32)  # X
+    src_y = (matrix[1, 0] * grid_x + matrix[1, 1] * grid_y + matrix[1, 2] /
+             (matrix[2, 0] * grid_x + matrix[2, 1] * grid_y + matrix[2, 2])).round().astype(np.int32)  # Y
+    src_x_clip = np.clip(src_x, 0, x.shape[1] - 1)  # for索引合法
+    src_y_clip = np.clip(src_y, 0, x.shape[0] - 1)
+    output = np.where(((0 <= src_x) & (src_x < x.shape[1]) & (0 <= src_y) & (src_y < x.shape[0]))[:, :, None],
+                      x[src_y_clip, src_x_clip], borderValue[None, None])  # 广播机制
+    return output
+
+
+# x0 = np.random.randint(0, 256, (600, 800, 3), dtype=np.uint8)
+# matrix = np.array([[1, 1, 100], [1, 2, 80.], [0, 0, 1]], dtype=np.float32)
+# y = _warpPerspective(x0, matrix, (500, 1000))
+# y_ = cv.warpPerspective(x0, matrix, (500, 1000), borderValue=(114, 114, 114))
 # print(np.all(y == y_))
 
 

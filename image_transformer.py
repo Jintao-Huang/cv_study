@@ -3,29 +3,10 @@
 # Date: 
 
 
-# 使用仿射变化进行图像变换
+# 使用仿射变化进行图像变换(一般用于深度学习图像增强)
+# 使用HSV色彩变换(一般用于深度学习图像增强)
 import numpy as np
 import cv2 as cv
-
-
-def resize_max(image, max_height=None, max_width=None):
-    """将图像resize成最大不超过max_height, max_width的图像. (双线性插值)
-
-    :param image: ndarray[H, W, C]. BGR. uint8
-    :param max_width: int
-    :param max_height: int
-    :return: ndarray[H, W, C]. BGR. uint8"""
-
-    # 1. 输入
-    height0, width0 = image.shape[:2]
-    max_width = max_width or width0
-    max_height = max_height or height0
-    # 2. 算法
-    ratio = min(max_height / height0, max_width / width0)
-    if ratio < 1:
-        new_shape = int(round(width0 * ratio)), int(round(height0 * ratio))
-        image = cv.resize(image, new_shape, interpolation=cv.INTER_LINEAR)
-    return image
 
 
 class ImageTransformer:
@@ -129,9 +110,30 @@ class ImageTransformer:
         return cv.warpAffine(self.image, self.matrix[:2], dsize, borderValue=(114, 114, 114))
 
 
+def resize_max(image, max_height=None, max_width=None):
+    """将图像resize成最大不超过max_height, max_width的图像. (双线性插值)
+    用于辅助展示(example()中使用)
+
+    :param image: ndarray[H, W, C]. BGR. uint8
+    :param max_width: int
+    :param max_height: int
+    :return: ndarray[H, W, C]. BGR. uint8"""
+
+    # 1. 输入
+    height0, width0 = image.shape[:2]
+    max_width = max_width or width0
+    max_height = max_height or height0
+    # 2. 算法
+    ratio = min(max_height / height0, max_width / width0)
+    if ratio < 1:
+        new_shape = int(round(width0 * ratio)), int(round(height0 * ratio))
+        image = cv.resize(image, new_shape, interpolation=cv.INTER_LINEAR)
+    return image
+
+
 def example1():
-    # 测试功能的完备性
-    x = cv.imread("dog.jpg")
+    """测试功能的完备性"""
+    x = cv.imread("images/dog.jpg")
     x = resize_max(x, 800, 800)
     height, width = x.shape[:2]
     cv.imshow("1", x)
@@ -163,6 +165,7 @@ def example1():
 
 
 def example2():
+    """图像增强示例"""
     pass
 
 

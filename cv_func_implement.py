@@ -260,3 +260,18 @@ def _cvtColor(src, code):
 # x1 = cv.cvtColor(y, cv.COLOR_HSV2BGR)
 # x2 = _cvtColor(y_, cv.COLOR_HSV2BGR)
 # print(np.all(x1 == x2))  # True. 也可能出现False的情况
+
+
+def _LUT(src, lut):
+    """cv.LUT(). 颜色0 - 255通过lut映射. src -> lut[src]
+    参考: https://docs.opencv.org/4.5.2/d2/de8/group__core__array.html#gab55b8d062b7f5587720ede032d34156f
+
+    :param src: shape[H, W]. uint8
+    :param lut: shape[256]. uint8等int
+    :return: shape[H, W]
+    """
+    return lut[src].astype(np.uint8)
+
+# x = np.random.randint(0, 256, (100, 100), dtype=np.uint8)
+# lut = np.random.randint(0, 256, (256,), dtype=np.uint8)
+# print(np.all(cv.LUT(x, lut) == _LUT(x, lut)))  # True

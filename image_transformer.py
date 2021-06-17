@@ -107,27 +107,37 @@ class ImageTransformer:
         return flip_matrix
 
     def get_image(self, dsize=None):
-        dsize = dsize or (x.shape[1], x.shape[0])
+        dsize = dsize or (self.image.shape[1], self.image.shape[0])
         return cv.warpAffine(self.image, self.matrix[:2], dsize, borderValue=(114, 114, 114))
 
 
-x = cv.imread("dog.jpg")
-x = resize_max(x, 800, 800)
-height, width = x.shape[:2]
-cv.imshow("1", x)
-# -------------------------------------
-image_transformer = ImageTransformer(x)
-image_transformer.rotate(90)
-image_transformer.scale(0.5)
-image_transformer.translation(0, width / 2)
-x = image_transformer.get_image()
-x2 = x
-cv.imshow("2", x)
-# -------------------------------------
-image_transformer.flip_lr()
-image_transformer.flip_ud()
-image_transformer.rotate(180)
-x = image_transformer.get_image()
-print(np.all(x == x2))  # True
-cv.imshow("3", x)
-cv.waitKey(0)
+def example1():
+    # 测试功能的完备性
+    x = cv.imread("dog.jpg")
+    x = resize_max(x, 800, 800)
+    height, width = x.shape[:2]
+    cv.imshow("1", x)
+    # -------------------------------------
+    image_transformer = ImageTransformer(x)
+    image_transformer.rotate(90)
+    image_transformer.scale(0.5)
+    image_transformer.translation(0, width / 2)
+    x = image_transformer.get_image()
+    x2 = x
+    cv.imshow("2", x)
+    # -------------------------------------
+    image_transformer.flip_lr()
+    image_transformer.flip_ud()
+    image_transformer.rotate(180)
+    x = image_transformer.get_image()
+    print(np.all(x == x2))  # True
+    cv.imshow("3", x)
+    cv.waitKey(0)
+
+
+def example2():
+    pass
+
+
+if __name__ == "__main__":
+    example1()

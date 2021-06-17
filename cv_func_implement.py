@@ -48,11 +48,11 @@ def _warpAffine(x, matrix, dsize=None, flags=None):
     return output
 
 
-x0 = np.random.randint(0, 256, (600, 800, 3), dtype=np.uint8)
-matrix = np.array([[1, 1, 100], [1, 2, 80.]], dtype=np.float32)
-y = _warpAffine(x0, matrix, (500, 1000))
-y_ = cv.warpAffine(x0, matrix, (500, 1000), borderValue=(114, 114, 114))
-print(np.all(y == y_))
+# x0 = np.random.randint(0, 256, (600, 800, 3), dtype=np.uint8)
+# matrix = np.array([[1, 1, 100], [1, 2, 80.]], dtype=np.float32)
+# y = _warpAffine(x0, matrix, (500, 1000))
+# y_ = cv.warpAffine(x0, matrix, (500, 1000), borderValue=(114, 114, 114))
+# print(np.all(y == y_))
 
 
 def _getRotationMatrix2D(center, angle, scale):

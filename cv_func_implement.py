@@ -189,30 +189,30 @@ def _cvtColor(src, code):
         src = src[:, :, ::-1] if code == cv.COLOR_RGB2HSV else src
         # (hue saturation value). 色调、饱和度、明度
         src = src.astype(np.float32) / 255  # to float
-        value = np.max(src, -1)
-        max_sub_min = value - np.min(src, -1)
-        saturation = np.where(value == 0, np.zeros_like(value), max_sub_min / value)
+        val = np.max(src, -1)
+        max_sub_min = val - np.min(src, -1)
+        sat = np.where(val == 0, np.zeros_like(val), max_sub_min / val)
         blue, green, red = np.transpose(src, (2, 0, 1))
         hue = np.where(
-            max_sub_min == 0, np.zeros_like(value),
+            max_sub_min == 0, np.zeros_like(val),
             np.where(
-                value == red, 60 * (green - blue) / max_sub_min, np.where(
-                    value == green, 120 + 60 * (blue - red) / max_sub_min,
+                val == red, 60 * (green - blue) / max_sub_min, np.where(
+                    val == green, 120 + 60 * (blue - red) / max_sub_min,
                     240 + 60 * (red - green) / max_sub_min
                 )))
         # H: [-60, 300). S, V: [0, 1]
         hue = ((hue + 360) % 360 / 2).round().astype(np.uint8)  # `/ 2` for uint8
-        saturation = (saturation * 255).round().astype(np.uint8)
-        value = (value * 255).round().astype(np.uint8)
+        sat = (sat * 255).round().astype(np.uint8)
+        val = (val * 255).round().astype(np.uint8)
         # H: [0, 180]. S, V: [0, 255]
-        return np.stack([hue, saturation, value], -1)
+        return np.stack([hue, sat, val], -1)
     elif code in (cv.COLOR_HSV2BGR, cv.COLOR_HSV2RGB):
         # 参考: https://www.cnblogs.com/klchang/p/6784856.html
-        hue, saturation, value = np.transpose(src, (2, 0, 1)).astype(np.float32)
+        hue, sat, val = np.transpose(src, (2, 0, 1)).astype(np.float32)
         # [0, 360], [0, 1], [0, 1]
-        hue, saturation, value = hue * 2, saturation / 255, value / 255
-        max_sub_min = saturation * value
-        min_ = value - max_sub_min  # max: value
+        hue, sat, val = hue * 2, sat / 255, val / 255
+        max_sub_min = sat * val
+        min_ = val - max_sub_min  # max: val
         min2_sub = np.abs(((hue + 60) % 120 - 60) / 60 * max_sub_min)  # e.g. green - blue
         dst = np.where(
             ((300 <= hue) & (hue < 360))[..., None],

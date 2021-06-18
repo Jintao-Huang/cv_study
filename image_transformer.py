@@ -121,13 +121,13 @@ class ImageTransformer:
         dst = cv.cvtColor(np.stack([hue, sat, val], axis=-1), cv.COLOR_HSV2BGR)
         return dst
 
-    def get_image(self, dsize=None, hsv_c=None):
+    def get_image(self, dsize=None, hsv_c=None, flags=None):
         dsize = dsize or (self.image.shape[1], self.image.shape[0])
         dst = self.image
         if hsv_c and hsv_c != (1, 1, 1):
             dst = self._hsv_transform(dst, hsv_c)
         if not np.all(np.abs(self.matrix[:2] - np.eye(3)[:2]) < 1e-12):  # 矩阵不是eye
-            dst = cv.warpAffine(dst, self.matrix[:2], dsize, borderValue=(114, 114, 114))
+            dst = cv.warpAffine(dst, self.matrix[:2], dsize, flags=flags, borderValue=(114, 114, 114))
         return dst
 
 
@@ -227,14 +227,14 @@ def example1():
     image_transformer.scale(0.5)
     image_transformer.translation(0, width / 2)
     x = image_transformer.get_image()
-    x2 = x
     cv.imshow("2", x)
+    x0 = x
     # ------------------------------------- test flip_lr flip_ud
     image_transformer.flip_lr()
     image_transformer.flip_ud()
     image_transformer.rotate(180)
     x = image_transformer.get_image()
-    print(np.all(x == x2))  # True
+    print(np.all(x == x0))  # True
     cv.imshow("3", x)
     # ------------------------------------- test shear
     image_transformer.shear(45, -45)
@@ -245,9 +245,18 @@ def example1():
     image_transformer.rotate(-45)
     x = image_transformer.get_image()
     cv.imshow("5", x)
+    x0 = x
     # ------------------------------------- test hsv_transform
     x = image_transformer.get_image(hsv_c=(0.8, 0.5, 0.5))
     cv.imshow("6", x)
+    # ------------------------------------- 变回来
+    image_transformer.image = x0
+    # image_transformer.matrix = np.linalg.inv(image_transformer.matrix)
+    # x = image_transformer.get_image()
+    # or
+    x = image_transformer.get_image(flags=cv.WARP_INVERSE_MAP)
+
+    cv.imshow("7", x)
     cv.waitKey(0)
 
 
@@ -277,20 +286,11 @@ def test_hsv():
 
 def aug_example():
     """图像增强示例"""
-    np.random.seed(618)
     # --------------------- 超参数
-    # hsv_c = (0.015, 0.7, 0.4)  # (0.015, (0.3, 1.7), 0.4)
-    # rotate = 2  # (-2, 2)
-    # scale = (0.5, 1.5)  # 0.5
-    # shear = 2  # (-2, 2)
-    # flip_lr = 0.5
-    # flip_ud = 0.01
-    # translation = 0.2  # 比例. (-0.2, 0.2)
-
-    hsv_c = (0.015, (0.3, 1.7), 0.4)
-    rotate = (-2, 2)
-    scale = 0.5
-    shear = (-2, 2)
+    hsv_c = (0.05, 0.7, 0.4)  # (0.015, (0.3, 1.7), 0.4)
+    rotate = 3  # (-3, 3)
+    scale = 0.6  # (0.4, 1.6)
+    shear = 3  # (-3, 3)
     flip_lr = 0.5
     flip_ud = 0.01
     translation = 0.2  # 比例. (-0.2, 0.2)
@@ -299,6 +299,7 @@ def aug_example():
     x = cv.imread("images/dog.jpg")
     x = resize_max(x, 800, 800)
     print("hsv_c, rotate, scale, shear, flip_lr, flip_ud, translation")
+    np.random.seed(618)
     for i in range(100):
         dst, aug_param = img_augment(x, hsv_c, rotate, scale, shear, flip_lr, flip_ud, translation)
         cv.imshow("1", dst)
@@ -306,7 +307,16 @@ def aug_example():
         cv.waitKey(0)
 
 
+def aug_example2():
+    x = cv.imread("images/dog.jpg")
+    x = resize_max(x, 800, 800)
+    dst = img_transform(x, (1.05, 1.7, 1.4), 3, 0.4, (3, -3), False, False, (0.2, 0.2))
+    cv.imshow("1", dst)
+    cv.waitKey(0)
+
+
 if __name__ == "__main__":
     # example1()
     # test_hsv()
     aug_example()
+    # aug_example2()

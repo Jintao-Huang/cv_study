@@ -1,1 +1,3 @@
 test.py
+images/*
+!images/dog.jpg

@@ -66,7 +66,7 @@ def _warpAffine(src, matrix, dsize=None, flags=None):
     :param src: shape[H, W, C]. uint8
     :param matrix: 仿射矩阵. shape[2, 3]. float32
     :param dsize: Tuple[W, H]. 输出的size
-    :param flags: cv.WARP_INVERSE_MAP. 唯一可选参数
+    :param flags: cv.WARP_INVERSE_MAP. 唯一可选参数. 其他参数忽略
     :return: shape[dsize[1], dsize[0], C]. uint8
     """
     dsize = dsize or (src.shape[1], src.shape[0])  # 输出的size
@@ -74,6 +74,7 @@ def _warpAffine(src, matrix, dsize=None, flags=None):
     if flags is None or flags & cv.WARP_INVERSE_MAP == 0:  # flags无cv.WARP_INVERSE_MAP参数
         matrix = _invertAffineTransform(matrix)
     grid_x, grid_y = np.meshgrid(np.arange(dsize[0]), np.arange(dsize[1]))  # np.int32
+    # 有点像最近邻
     src_x = (matrix[0, 0] * grid_x + matrix[0, 1] * grid_y + matrix[0, 2]).round().astype(np.int32)  # X
     src_y = (matrix[1, 0] * grid_x + matrix[1, 1] * grid_y + matrix[1, 2]).round().astype(np.int32)  # Y
     # 也可以这样实现，是等价的
@@ -123,7 +124,8 @@ def _warpPerspective(src, matrix, dsize=None, flags=None):
 # matrix = np.array([[1, 1, 100], [1, 2, 80.], [0, 0, 1]], dtype=np.float32)
 # y = _warpPerspective(x0, matrix, (500, 1000))
 # y_ = cv.warpPerspective(x0, matrix, (500, 1000), borderValue=(114, 114, 114))
-# print(np.all(y == y_))
+# y__ = cv.warpAffine(x0, matrix[:2], (500, 1000), borderValue=(114, 114, 114))
+# print(np.all((y == y_) & (y_ == y__)))
 
 
 def _getRotationMatrix2D(center, angle, scale):
